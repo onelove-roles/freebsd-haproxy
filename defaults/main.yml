@@ -1,0 +1,38 @@
+---
+haproxy_hosts:
+  # - name: "{{ haproxy_domain }}"
+  #   domains:
+  #     - "{{ haproxy_domain }}"
+  #   type: "proxy"
+  #   bind:
+  #     - ":80"
+  #     - "ipv6@:80"
+  #   backend:
+  #     - name: "server1"
+  #       upstream: "127.0.0.1"
+  #       port: 8000
+  #
+  # - name: "haproxy.{{ hoster.stdout }}"
+  #   domains:
+  #     - "haproxy.{{ hoster.stdout }}"
+  #   type: "fpm"
+  #   bind:
+  #     - ":80"
+  #     - "ipv6@:80"
+  #   backend:
+  #     - name: "server1"
+  #       upstream: "webmail.{{ hoster.stdout }}"
+  #       port: 9000
+  #   docroot: /usr/local/www/snappymail
+
+  - name: "imap.{{ hoster.stdout }}"
+    domains: 
+      - "haproxy.{{ hoster.stdout }}"
+    type: "imap"
+    bind:
+      - ":143"
+      - "ipv6@:143"
+    backend:
+      - name: "server1"
+        upstream: "cyrus.{{ hoster.stdout }}"
+        port: 143

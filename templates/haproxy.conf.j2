@@ -1,0 +1,64 @@
+global
+  daemon
+  maxconn 256
+
+defaults
+  mode http
+  timeout connect 5000ms
+  timeout client 50000ms
+  timeout server 50000ms
+
+{% for host in haproxy_hosts %}
+# VHOST: {{ host.name }}
+{% if host.type == "http" %}
+frontend {{ host.name }}-front
+{% for bind in host.bind %}
+  bind {{ bind }}
+{% endfor %}
+{% for domain in host.domains %}
+  acl acl_{{ host.name }} hdr({{ domain }}) -i {{ domain }}
+{% endfor %}
+  use_backend {{ host.name }}-back if acl_{{ host.name }}
+
+backend {{ host.name }}-back
+{% for backend in host.backend %}
+  server {{ backend.name }} {{ backend.upstream }}:{{ backend.port }} maxconn 32
+{% endfor %}
+
+{% elif host.type == "fpm" %}
+frontend {{ host.name }}-front
+{% for bind in host.bind %}
+  bind {{ bind }}
+{% endfor %}
+{% for domain in host.domains %}
+  acl acl_{{ host.name }} hdr({{ domain }}) -i {{ domain }}
+{% endfor %}
+  default_backend {{ host.name }}-back
+
+backend {{ host.name }}-back
+{% for backend in host.backend %}
+  use-fcgi-app {{ host.name }}-fpm
+  server {{ backend.name }} {{ backend.upstream }}:{{ backend.port }} maxconn 32 proto fcgi
+{% endfor %}
+
+fcgi-app {{ host.name }}-fpm
+  log-stderr global
+  docroot {{ host.docroot }}
+  index index.php
+  path-info ^(/.+\.php)(/.*)?$
+
+{% elif host.type == "imap" %}
+frontend {{ host.name }}-front
+{% for bind in host.bind %}
+  bind {{ bind }}
+{% endfor %}
+  mode tcp
+  default_backend {{ host.name }}-back
+
+backend {{ host.name }}-back
+{% for backend in host.backend %}
+  server {{ backend.name }} {{ backend.upstream }}:{{ backend.port }} send-proxy
+{% endfor %}
+
+{% endif %}
+{% endfor %}
